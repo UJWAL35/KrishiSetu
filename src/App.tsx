@@ -68,7 +68,6 @@ export default function App() {
                     <Route path="/order/:cropId" element={<OrderingPage />} />
                     <Route path="/cart/checkout" element={<CartCheckout />} />
                     <Route path="/orders" element={<PurchaseHistory />} />
-                    <Route path="/schemes" element={<SchemesPage />} />
                 </Route>
 
                 {/* Delivery Partner routes */}

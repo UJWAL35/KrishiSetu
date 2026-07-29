@@ -40,8 +40,13 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
     cancelled:         { label: "Cancelled",         color: "#C62828", bg: "#FFEBEE" },
 };
 
-function getNextStatus(current: Status, isLastLeg: boolean): Status | null {
-    if (current === "assigned")         return "picked_up";
+function getNextStatus(current: Status, isLastLeg: boolean, totalLegs: number): Status | null {
+    if (current === "assigned") {
+        if (isLastLeg && totalLegs > 1) {
+            return "out_for_delivery";
+        }
+        return "picked_up";
+    }
     if (current === "picked_up")        return isLastLeg ? "out_for_delivery" : "at_warehouse";
     if (current === "at_warehouse")     return isLastLeg ? "out_for_delivery" : null;
     return null;
@@ -139,7 +144,8 @@ export default function DeliveryOrders() {
                             const isExpanded = expandedId === delivery.id;
                             const nextStatus = getNextStatus(
                                 delivery.status as Status,
-                                delivery.legIndex === delivery.totalLegs
+                                delivery.legIndex === delivery.totalLegs,
+                                delivery.totalLegs
                             );
                             const currentIdx = statusOrder.indexOf(delivery.status as Status);
 

@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
-import { notifications } from "@db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { notifications, users } from "@db/schema";
+import { eq, desc, and, inArray } from "drizzle-orm";
 
 export const notificationRouter = createRouter({
     list: publicQuery
@@ -20,6 +20,10 @@ export const notificationRouter = createRouter({
             let conditions = [];
             if (input?.userId) {
                 conditions.push(eq(notifications.userId, input.userId));
+                const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, input.userId)).limit(1);
+                if (user?.role === "farmer") {
+                    conditions.push(inArray(notifications.type, ["order", "scheme", "general"]));
+                }
             }
             if (input?.unreadOnly) {
                 conditions.push(eq(notifications.isRead, false));
@@ -100,6 +104,10 @@ export const notificationRouter = createRouter({
             let conditions = [eq(notifications.isRead, false)];
             if (input?.userId) {
                 conditions.push(eq(notifications.userId, input.userId));
+                const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, input.userId)).limit(1);
+                if (user?.role === "farmer") {
+                    conditions.push(inArray(notifications.type, ["order", "scheme", "general"]));
+                }
             }
             
             const unread = await db

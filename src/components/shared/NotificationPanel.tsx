@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { X, Bell, Package, AlertTriangle, Info, Truck } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { formatDistanceToNow } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NotificationPanelProps {
     onClose: () => void;
@@ -20,13 +21,8 @@ export default function NotificationPanel({ onClose }: NotificationPanelProps) {
     const panelRef = useRef<HTMLDivElement>(null);
     const utils = trpc.useUtils();
 
-    // Read the current user ID from localStorage to filter notifications
-    const userId = (() => {
-        try {
-            const id = localStorage.getItem("sf_user_id");
-            return id ? parseInt(id, 10) : undefined;
-        } catch { return undefined; }
-    })();
+    const { user } = useAuth();
+    const userId = user?.id;
 
     const { data: notifications } = trpc.notification.list.useQuery(
         userId ? { userId } : {}

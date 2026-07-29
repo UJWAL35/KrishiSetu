@@ -8,7 +8,6 @@ import { CartProvider } from "@/context/CartContext";
 const userLinks = [
     { label: "Marketplace", path: "/marketplace", icon: "ShoppingBag" },
     { label: "My Orders",   path: "/orders",       icon: "BarChart3"  },
-    { label: "Schemes",     path: "/schemes",      icon: "Bell"       },
 ];
 
 export default function UserLayout() {

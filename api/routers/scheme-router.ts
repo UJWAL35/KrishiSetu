@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRouter, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
-import { schemes } from "@db/schema";
+import { schemes, users, notifications } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { runScraper } from "../queries/schemes-scraper";
 
@@ -101,6 +101,20 @@ export const schemeRouter = createRouter({
                 color: input.color,
                 isActive: true,
             });
+            // Fetch all farmers
+            const allFarmers = await db.select({ id: users.id }).from(users).where(eq(users.role, "farmer"));
+            
+            if (allFarmers.length > 0) {
+                const notificationsToInsert = allFarmers.map(farmer => ({
+                    userId: farmer.id,
+                    title: "New Scheme Available",
+                    message: `A new scheme "${input.title}" has been launched. Check it out!`,
+                    type: "scheme" as const,
+                    isRead: false,
+                }));
+                await db.insert(notifications).values(notificationsToInsert);
+            }
+
             return { id: result.insertId, success: true };
         }),
 

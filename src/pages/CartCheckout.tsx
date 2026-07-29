@@ -61,6 +61,9 @@ export default function CartCheckout() {
                 if (storedId) currentUserId = parseInt(storedId, 10) || 1;
             } catch { /* ignore */ }
 
+            // Generate a single OTP for all items in the checkout session
+            const sessionOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
             for (const item of cartItems) {
                 const result = await createOrder.mutateAsync({
                     userId: currentUserId,
@@ -72,6 +75,7 @@ export default function CartCheckout() {
                     totalAmount: (item.price * item.quantity) + (delivery.price / cartItems.length) + (platformFee / cartItems.length),
                     deliveryType: selectedDelivery as "express" | "standard" | "pickup",
                     address: "123 SmartFarm St, Pune",
+                    otp: sessionOtp,
                 });
 
                 // Be defensive about the shape of the mutation response —

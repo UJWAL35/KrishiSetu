@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRouter, publicQuery, authedQuery } from "../middleware";
 import { getDb } from "../queries/connection";
-import { users, farms, crops, reviews } from "@db/schema";
+import { users, farms, crops, reviews, notifications } from "@db/schema";
 import { eq, like, or, and } from "drizzle-orm";
 import { haversineKm } from "./delivery-router";
 
@@ -345,6 +345,15 @@ export const farmerRouter = createRouter({
                 .update(users)
                 .set({ rating: newAvgRating, reviewCount: totalReviews })
                 .where(eq(users.id, input.farmerId));
+
+            // Notify farmer about review
+            await db.insert(notifications).values({
+                userId: input.farmerId,
+                title: "New Review",
+                message: `A consumer left a ${input.rating}-star review for you.`,
+                type: "general",
+                isRead: false,
+            });
 
             return { success: true, newAvgRating, totalReviews };
         }),

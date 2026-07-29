@@ -58,7 +58,10 @@ export default function TopNav({ links, role }: TopNavProps) {
 
     const { cartCount } = useCart();
     const { t, lang, setLang, languages, currentLanguage } = useLanguage();
-    const { data: unreadCount } = trpc.notification.unreadCount.useQuery();
+    const { data: unreadCount } = trpc.notification.unreadCount.useQuery(
+        user ? { userId: user.id } : {},
+        { enabled: !!user }
+    );
 
     // Cart bounce on item added
     useEffect(() => {

@@ -143,6 +143,17 @@ export const orderRouter = createRouter({
                     }
                 }
             }
+            const [crop] = await db.select({ name: crops.name, unit: crops.unit }).from(crops).where(eq(crops.id, input.cropId)).limit(1);
+            const cropName = crop?.name || "Crop";
+            const unit = crop?.unit || "kg";
+            
+            await db.insert(notifications).values({
+                userId: input.farmerId,
+                title: "New Order Received",
+                message: `${input.quantity}kg of crop has been ordered from you so keep it ready`,
+                type: "order",
+                isRead: false,
+            });
 
             return { success: true, orderNumber: orderNum };
         }),
@@ -248,12 +259,13 @@ export const orderRouter = createRouter({
                 totalAmount: z.number(),
                 deliveryType: z.enum(["express", "standard", "pickup"]),
                 address: z.string(),
+                otp: z.string().optional(),
             })
         )
         .mutation(async ({ input }) => {
             const db = getDb();
             const orderNumber = `KS-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const otp = input.otp || Math.floor(100000 + Math.random() * 900000).toString();
             
             const [result] = await db.insert(orders).values({
                 orderNumber,
@@ -269,6 +281,44 @@ export const orderRouter = createRouter({
                 otp,
                 deliveryAddress: input.address,
             });
+            const newOrderId = result.insertId;
+
+            // Generate delivery legs if it's not pickup
+            if (input.deliveryType !== "pickup") {
+                const [farmer] = await db.select({ lat: users.lat, lng: users.lng, location: users.location, name: users.name }).from(users).where(eq(users.id, input.farmerId)).limit(1);
+                const [customer] = await db.select({ lat: users.lat, lng: users.lng }).from(users).where(eq(users.id, input.userId)).limit(1);
+                
+                if (farmer && customer) {
+                    const allWh = await db.select().from(warehouses).where(eq(warehouses.isActive, true));
+                    const legs = planDeliveryLegs(
+                        farmer.lat || 18.5204,
+                        farmer.lng || 73.8567,
+                        farmer.location || `${farmer.name}'s Farm`,
+                        customer.lat || 19.0760,
+                        customer.lng || 72.8777,
+                        input.address,
+                        allWh
+                    );
+
+                    for (const leg of legs) {
+                        await db.insert(deliveries).values({
+                            orderId: newOrderId,
+                            legIndex: leg.legIndex,
+                            totalLegs: legs.length,
+                            pickupLat: leg.pickupLat,
+                            pickupLng: leg.pickupLng,
+                            pickupAddress: leg.pickupAddress,
+                            deliveryLat: leg.deliveryLat,
+                            deliveryLng: leg.deliveryLng,
+                            deliveryAddress: leg.deliveryAddress,
+                            fromWarehouseId: leg.fromWarehouseId,
+                            toWarehouseId: leg.toWarehouseId,
+                            status: "pending",
+                            partnerEarning: "0",
+                        });
+                    }
+                }
+            }
 
             // Deduct stock from crop
             const cropData = await db.select().from(crops).where(eq(crops.id, input.cropId)).limit(1);
@@ -281,7 +331,7 @@ export const orderRouter = createRouter({
             await db.insert(notifications).values({
                 userId: input.farmerId,
                 title: "New Order Received",
-                message: `You have received a new order (${orderNumber}) for ${input.quantity}kg of your crop.`,
+                message: `${input.quantity}kg of crop has been ordered from you so keep it ready`,
                 type: "order",
                 isRead: false,
             });
