@@ -28,7 +28,7 @@ export const aiRouter = createRouter({
             try {
                 const genAI = new GoogleGenerativeAI(apiKey);
                 const model = genAI.getGenerativeModel({
-                    model: "gemini-flash-latest",
+                    model: "gemini-2.5-flash",
                     systemInstruction: `You are FarmAI, a helpful, friendly, and expert agricultural AI assistant for the KrishiSetu platform. 
 The user is currently logged in as: ${input.userRole || "farmer"}.
 If a farmer asks how to list crops or add crops, guide them step-by-step or offer to help them fill in crop name, category (grains, vegetables, fruits, pulses, others), price in rupees, unit (kg, quintal, piece, etc.), stock quantity, and organic status.
@@ -74,7 +74,7 @@ Provide clear, practical, and agriculturally relevant answers. Keep responses we
 
                 const genAI = new GoogleGenerativeAI(apiKey);
                 const model = genAI.getGenerativeModel({
-                    model: "gemini-flash-latest",
+                    model: "gemini-2.5-flash",
                     systemInstruction: `You are a friendly, spoken AI voice assistant helping an Indian farmer list their crop on the KrishiSetu platform.
 You MUST communicate strictly in the requested language: ${input.language}.
 The data extracted so far is: ${JSON.stringify(input.currentState || {})}
@@ -151,9 +151,10 @@ Example of a correct response:
                 }
 
                 return parsed;
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Gemini API Error in extractCropInfo:", error);
-                throw new Error("I encountered an error while trying to process your request.");
+                const msg = error.message || String(error);
+                throw new Error(`I encountered an error while trying to process your request. Debug: ${msg}`);
             }
         }),
 });

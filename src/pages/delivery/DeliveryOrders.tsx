@@ -42,13 +42,14 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
 
 function getNextStatus(current: Status, isLastLeg: boolean, totalLegs: number): Status | null {
     if (current === "assigned") {
-        if (isLastLeg && totalLegs > 1) {
-            return "out_for_delivery";
-        }
         return "picked_up";
     }
-    if (current === "picked_up")        return isLastLeg ? "out_for_delivery" : "at_warehouse";
-    if (current === "at_warehouse")     return isLastLeg ? "out_for_delivery" : null;
+    if (current === "picked_up") {
+        return isLastLeg ? "out_for_delivery" : "at_warehouse";
+    }
+    if (current === "at_warehouse") {
+        return null;
+    }
     return null;
 }
 

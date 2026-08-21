@@ -165,7 +165,7 @@ export default function LiveDeliveryMap({
     }, [deliveries, warehouses, partnerLocation, center]);
 
     return (
-        <div className="relative w-full h-[500px] rounded-2xl overflow-hidden shadow-lg border-4 border-white bg-[#E8EDF5]">
+        <div className="relative w-full h-[500px] rounded-2xl overflow-hidden shadow-lg border-4 border-white bg-[#E8EDF5] z-0">
             <div ref={mapRef} className="w-full h-full" />
             <div className="absolute top-4 right-4 z-[400] bg-white p-3 rounded-xl shadow-lg border border-[#E8EDF5] space-y-2">
                 <div className="flex items-center gap-2">

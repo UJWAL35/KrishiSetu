@@ -76,6 +76,15 @@ const categoryColors: Record<Category, string> = {
     others:     "#00695C",
 };
 
+const autoDetectCategory = (name: string): Category | null => {
+    const lower = name.toLowerCase();
+    if (lower.includes("wheat") || lower.includes("rice") || lower.includes("corn") || lower.includes("maize") || lower.includes("oat") || lower.includes("barley") || lower.includes("millet") || lower.includes("quinoa")) return "grains";
+    if (lower.includes("tomato") || lower.includes("potato") || lower.includes("onion") || lower.includes("cabbage") || lower.includes("carrot") || lower.includes("spinach") || lower.includes("broccoli") || lower.includes("garlic") || lower.includes("chilli") || lower.includes("pepper")) return "vegetables";
+    if (lower.includes("apple") || lower.includes("banana") || lower.includes("mango") || lower.includes("orange") || lower.includes("grape") || lower.includes("lemon") || lower.includes("papaya") || lower.includes("watermelon") || lower.includes("berry") || lower.includes("melon")) return "fruits";
+    if (lower.includes("dal") || lower.includes("lentil") || lower.includes("chickpea") || lower.includes("bean") || lower.includes("pea") || lower.includes("gram") || lower.includes("soybean") || lower.includes("moong") || lower.includes("pulse")) return "pulses";
+    return null;
+};
+
 export default function CropManagement() {
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -477,7 +486,17 @@ export default function CropManagement() {
                                                 required
                                                 type="text"
                                                 value={formData.name}
-                                                onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+                                                onChange={(e) => {
+                                                    const newName = e.target.value;
+                                                    setFormData(p => {
+                                                        const detected = autoDetectCategory(newName);
+                                                        return {
+                                                            ...p,
+                                                            name: newName,
+                                                            ...(detected ? { category: detected } : {})
+                                                        };
+                                                    });
+                                                }}
                                                 className="w-full bg-transparent outline-none text-sm text-[#1B1B1B]"
                                                 placeholder="e.g. Cherry Tomatoes"
                                             />

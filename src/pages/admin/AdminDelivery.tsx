@@ -390,58 +390,7 @@ export default function AdminDelivery() {
                             ))}
                         </div>
 
-                        {/* Admin Approvals & Actions */}
-                        {allDeliveries?.some(d => d.status === "at_warehouse" || d.status === "picked_up") && (
-                            <div className="bg-white rounded-2xl p-6 shadow-md border-2 border-[#01579B]">
-                                <h3 className="font-bold text-lg text-[#0D1B2A] mb-3 flex items-center gap-2">
-                                    <CheckCircle2 className="w-5 h-5 text-[#01579B]" />
-                                    Pending Admin Approvals & Warehouse Verification
-                                </h3>
-                                <div className="space-y-3">
-                                    {allDeliveries?.filter(d => d.status === "at_warehouse" || d.status === "picked_up").map((d) => (
-                                        <div key={d.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-[#F0F7FF] rounded-xl border border-[#B3D4F5]">
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-mono text-sm font-bold text-[#01579B]">{d.orderNumber}</span>
-                                                    <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full font-semibold">
-                                                        Leg {d.legIndex}/{d.totalLegs}
-                                                    </span>
-                                                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 uppercase">
-                                                        {d.status.replace("_", " ")}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-[#5F6368] mt-1">
-                                                    Partner: <strong className="text-[#0D1B2A]">{d.partnerName || "Assigned Driver"}</strong> ({d.partnerPhone || "N/A"})
-                                                </p>
-                                                <p className="text-xs text-[#5F6368]">
-                                                    Route: {d.pickupAddress} ➔ {d.deliveryAddress}
-                                                </p>
-                                            </div>
-                                            {d.status === "picked_up" && (
-                                                <button
-                                                    onClick={async () => {
-                                                        await approveArrivalMutation.mutateAsync({ deliveryId: d.id });
-                                                        refetchDeliveries();
-                                                    }}
-                                                    disabled={approveArrivalMutation.isPending}
-                                                    className="px-5 py-2.5 bg-[#01579B] hover:bg-[#0277BD] text-white rounded-xl font-semibold text-xs shadow-md transition-all whitespace-nowrap disabled:opacity-50"
-                                                >
-                                                    {approveArrivalMutation.isPending ? "Approving..." : "✅ Approve Arrival & Continue Chain"}
-                                                </button>
-                                            )}
-                                            {d.status === "at_warehouse" && d.legIndex < d.totalLegs && (
-                                                <button
-                                                    onClick={() => setAssigningLegId(d.id)}
-                                                    className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold text-xs shadow-md transition-all whitespace-nowrap"
-                                                >
-                                                    + Assign Next Leg
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {/* Auto-chaining removes the need for manual next-leg assignment */}
 
                         {/* Chain delivery explanation */}
                         <div className="bg-gradient-to-r from-[#01579B] to-[#0277BD] rounded-2xl p-6 text-white">

@@ -32,9 +32,11 @@ export default function VoiceAssistantModal({ isOpen, onClose, onComplete }: Voi
     const messagesRef = useRef(messages);
     const extractedDataRef = useRef(extractedData);
     const languageRef = useRef(language);
+    const imageRef = useRef(image);
     useEffect(() => { messagesRef.current = messages; }, [messages]);
     useEffect(() => { extractedDataRef.current = extractedData; }, [extractedData]);
     useEffect(() => { languageRef.current = language; }, [language]);
+    useEffect(() => { imageRef.current = image; }, [image]);
 
     const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -146,7 +148,9 @@ export default function VoiceAssistantModal({ isOpen, onClose, onComplete }: Voi
             if (res.nextQuestion) {
                 setMessages(prev => [...prev, { role: "ai", text: res.nextQuestion }]);
                 speak(res.nextQuestion, languageRef.current.bcp47, () => {
-                    startListening();
+                    if (!res.isComplete) {
+                        startListening();
+                    }
                 });
             } else if (!res.isComplete) {
                 // Backend responded but gave us nothing to say and didn't mark
@@ -161,7 +165,7 @@ export default function VoiceAssistantModal({ isOpen, onClose, onComplete }: Voi
             if (res.isComplete) {
                 toast.success("Crop details successfully gathered!");
                 setTimeout(() => {
-                    onComplete(res.extractedData || currentData, image);
+                    onComplete(res.extractedData || currentData, imageRef.current);
                 }, 2000);
             }
         } catch (error: any) {

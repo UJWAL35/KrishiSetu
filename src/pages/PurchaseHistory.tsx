@@ -139,7 +139,9 @@ export default function PurchaseHistory() {
                 unit: order.unit || "kg",
                 farmerName: order.farmerName || "Farmer",
                 farmerAvatar: "/farmer-1.jpg",
+                farmerId: order.farmerId || 0,
                 farmName: order.farmName || "Farm",
+                farmId: 0,
                 isOrganic: false,
                 quantity: qty,
             });
@@ -194,7 +196,7 @@ export default function PurchaseHistory() {
     return (
         <div className="min-h-screen bg-[#F1F8E9]">
             {/* Header */}
-            <div className="sticky top-0 z-50 bg-white shadow-sm border-b border-[#C8E6C9]">
+            <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-[#C8E6C9]">
                 <div className="flex items-center h-14 px-4 gap-3 max-w-3xl mx-auto">
                     <motion.button
                         whileTap={{ scale: 0.9 }}

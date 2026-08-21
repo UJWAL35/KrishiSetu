@@ -16,6 +16,8 @@ import {
     BarChart2,
     Radar as RadarIcon,
     Clock,
+    Star,
+    MessageSquare,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { toast } from "sonner";
@@ -63,6 +65,7 @@ export default function FarmerDashboard() {
     const { data: sensorData } = trpc.sensor.getAll.useQuery(undefined, {
         refetchInterval: 5000,
     });
+    const { data: myReviews } = trpc.farmer.getMyReviews.useQuery();
 
     const fieldData = sensorData?.[selectedField];
 
@@ -526,6 +529,51 @@ export default function FarmerDashboard() {
                         </div>
                     </motion.div>
                 )}
+
+                {/* ── Customer Reviews ── */}
+                <motion.div variants={itemVariants} className="bg-white rounded-2xl shadow-md p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <MessageSquare className="w-5 h-5 text-[#1B5E20]" />
+                        <h3 className="text-lg font-semibold text-[#1B1B1B]">Customer Reviews</h3>
+                        {myReviews && myReviews.length > 0 && (
+                            <span className="text-xs text-[#1B5E20] bg-[#E8F5E9] px-2 py-0.5 rounded-full font-bold">
+                                {myReviews.length}
+                            </span>
+                        )}
+                    </div>
+                    
+                    {!myReviews || myReviews.length === 0 ? (
+                        <div className="text-center py-8 bg-[#F1F8E9] rounded-xl border border-[#C8E6C9] border-dashed">
+                            <Star className="w-8 h-8 text-[#9E9E9E] mx-auto mb-2 opacity-50" />
+                            <p className="text-[#5F6368] font-medium">No reviews yet</p>
+                            <p className="text-xs text-[#9E9E9E] mt-1">When customers review your farm, they'll appear here.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {myReviews.map((review) => (
+                                <div key={review.id} className="p-4 rounded-xl border border-[#E0E0E0] hover:border-[#C8E6C9] hover:shadow-sm transition-all bg-[#FAFAFA]">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <p className="font-semibold text-[#1B1B1B] text-sm">{review.consumerName || "Anonymous Customer"}</p>
+                                        <div className="flex items-center gap-0.5">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Star
+                                                    key={i}
+                                                    className={`w-3.5 h-3.5 ${i < review.rating ? "fill-amber-400 text-amber-400" : "fill-gray-200 text-gray-200"}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {review.comment && (
+                                        <p className="text-sm text-[#5F6368] italic mb-3">"{review.comment}"</p>
+                                    )}
+                                    <p className="text-[10px] text-[#9E9E9E] uppercase tracking-wide">
+                                        {new Date(review.createdAt).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </motion.div>
 
                 {/* Quick Actions */}
                 <motion.div variants={itemVariants} className="bg-white rounded-xl p-6 shadow-md">

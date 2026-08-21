@@ -389,6 +389,27 @@ export const deliveryRouter = createRouter({
         )
         .mutation(async ({ input }) => {
             const db = getDb();
+            
+            // 1. Get the current leg
+            const [currentLeg] = await db
+                .select()
+                .from(deliveries)
+                .where(eq(deliveries.id, input.deliveryId))
+                .limit(1);
+            if (!currentLeg) throw new Error("Current delivery leg not found");
+
+            // 2. Find the next leg for this order
+            const [nextLeg] = await db
+                .select()
+                .from(deliveries)
+                .where(and(
+                    eq(deliveries.orderId, currentLeg.orderId),
+                    eq(deliveries.legIndex, currentLeg.legIndex + 1)
+                ))
+                .limit(1);
+            if (!nextLeg) throw new Error("Next delivery leg not found. Is this the last leg?");
+
+            // 3. Assign the next leg to the new partner
             await db
                 .update(deliveries)
                 .set({
@@ -396,28 +417,23 @@ export const deliveryRouter = createRouter({
                     status: "assigned",
                     assignedAt: new Date(),
                 })
-                .where(eq(deliveries.id, input.deliveryId));
+                .where(eq(deliveries.id, nextLeg.id));
 
+            // 4. Send notification to the newly assigned partner
             const partnerUser = await db
                 .select({ userId: deliveryPartners.userId })
                 .from(deliveryPartners)
                 .where(eq(deliveryPartners.id, input.deliveryPartnerId))
                 .limit(1);
+            
             if (partnerUser[0]) {
-                const legRow = await db
-                    .select()
-                    .from(deliveries)
-                    .where(eq(deliveries.id, input.deliveryId))
-                    .limit(1);
-                if (legRow[0]) {
-                    await db.insert(notifications).values({
-                        userId: partnerUser[0].userId,
-                        title: "New Delivery Leg Assigned!",
-                        message: `You have a new delivery leg (Leg ${legRow[0].legIndex}/${legRow[0].totalLegs}). Pickup: ${legRow[0].pickupAddress}`,
-                        type: "delivery",
-                        isRead: false,
-                    });
-                }
+                await db.insert(notifications).values({
+                    userId: partnerUser[0].userId,
+                    title: "New Delivery Leg Assigned!",
+                    message: `You have a new delivery leg (Leg ${nextLeg.legIndex}/${nextLeg.totalLegs}). Pickup: ${nextLeg.pickupAddress}`,
+                    type: "delivery",
+                    isRead: false,
+                });
             }
             return { success: true };
         }),
@@ -448,23 +464,24 @@ export const deliveryRouter = createRouter({
 
             await db.update(deliveries).set(updates).where(eq(deliveries.id, input.deliveryId));
 
-            // Auto-assign the next leg to the same partner if they reached the warehouse
-            if (input.status === "at_warehouse") {
+            // Auto-assign logic: Automatically assign the next leg to the same partner
+            let nextLegAssigned = false;
+            if (input.status === "at_warehouse" && leg.legIndex < leg.totalLegs) {
                 const [nextLeg] = await db
                     .select()
                     .from(deliveries)
                     .where(and(eq(deliveries.orderId, leg.orderId), eq(deliveries.legIndex, leg.legIndex + 1)))
                     .limit(1);
-                
-                if (nextLeg && nextLeg.status === "pending") {
-                    await db
-                        .update(deliveries)
+
+                if (nextLeg) {
+                    await db.update(deliveries)
                         .set({
-                            deliveryPartnerId: partner.id,
+                            deliveryPartnerId: leg.deliveryPartnerId,
                             status: "assigned",
-                            assignedAt: new Date(),
+                            assignedAt: new Date()
                         })
                         .where(eq(deliveries.id, nextLeg.id));
+                    nextLegAssigned = true;
                 }
             }
 
@@ -472,10 +489,14 @@ export const deliveryRouter = createRouter({
 
             const adminUsers = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin"));
             for (const admin of adminUsers) {
+                let msg = `Partner ${ctx.user.name || "Delivery Partner"} updated Order #${orderRow?.orderNumber || leg.orderId} (Leg ${leg.legIndex}/${leg.totalLegs}) status to "${input.status}".`;
+                if (input.status === "at_warehouse") {
+                    msg = `Order #${orderRow?.orderNumber || leg.orderId} is out from warehouse and the next leg has automatically started with Partner ${ctx.user.name || "Delivery Partner"}.`;
+                }
                 await db.insert(notifications).values({
                     userId: admin.id,
-                    title: `Delivery Action: ${input.status.toUpperCase()}`,
-                    message: `Partner ${ctx.user.name || "Delivery Partner"} updated Order #${orderRow?.orderNumber || leg.orderId} (Leg ${leg.legIndex}/${leg.totalLegs}) status to "${input.status}". Admin approval available.`,
+                    title: input.status === "at_warehouse" ? "Warehouse Arrival & Next Leg Auto-Started" : `Delivery Action: ${input.status.toUpperCase()}`,
+                    message: msg,
                     type: "system",
                     isRead: false,
                 });

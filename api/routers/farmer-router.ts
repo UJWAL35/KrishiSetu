@@ -273,6 +273,27 @@ export const farmerRouter = createRouter({
             return { success: true };
         }),
 
+    getMyReviews: authedQuery.query(async ({ ctx }) => {
+        if (!ctx.user || ctx.user.role !== "farmer") throw new Error("Unauthorized");
+        const db = getDb();
+
+        const myReviews = await db
+            .select({
+                id: reviews.id,
+                rating: reviews.rating,
+                comment: reviews.comment,
+                createdAt: reviews.createdAt,
+                consumerName: users.name,
+            })
+            .from(reviews)
+            .leftJoin(users, eq(reviews.userId, users.id))
+            .where(eq(reviews.farmerId, ctx.user.id))
+            .orderBy(reviews.createdAt);
+            
+        // reverse to get newest first
+        return myReviews.reverse();
+    }),
+
     completeProfile: authedQuery
         .input(
             z.object({
