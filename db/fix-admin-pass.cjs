@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const mysql = require('mysql2/promise');
+const postgres = require('postgres');
 
 function hashPassword(password) {
     const salt = 'smartfarm_salt_2024';
@@ -7,11 +7,12 @@ function hashPassword(password) {
 }
 
 async function run() {
-    const conn = await mysql.createConnection('mysql://root:ujwalsql%402005@localhost:3306/smartfarm');
+    const url = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/smartfarm';
+    const sql = postgres(url);
     const hash = hashPassword('Admin@123');
-    await conn.query('UPDATE users SET password=? WHERE phone=?', [hash, '9999999999']);
+    await sql`UPDATE users SET password=${hash} WHERE phone='9999999999'`;
     console.log("Updated DB hash for Admin@123");
-    await conn.end();
+    await sql.end();
 }
 
 run().catch(console.error);

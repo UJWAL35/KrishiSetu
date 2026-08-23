@@ -100,7 +100,7 @@ export const schemeRouter = createRouter({
                 isNew: input.isNew,
                 color: input.color,
                 isActive: true,
-            });
+            }).returning({ id: schemes.id });
             // Fetch all farmers
             const allFarmers = await db.select({ id: users.id }).from(users).where(eq(users.role, "farmer"));
             
@@ -115,7 +115,7 @@ export const schemeRouter = createRouter({
                 await db.insert(notifications).values(notificationsToInsert);
             }
 
-            return { id: result.insertId, success: true };
+            return { id: result.id, success: true };
         }),
 
     update: publicQuery

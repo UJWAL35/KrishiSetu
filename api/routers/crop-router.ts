@@ -167,8 +167,8 @@ export const cropRouter = createRouter({
                     name: `${ctx.user.name || "My"}'s Farm`,
                     location: ctx.user.location || "India",
                     status: "active",
-                });
-                userFarms = await db.select().from(farms).where(eq(farms.id, farmResult.insertId)).limit(1);
+                }).returning({ id: farms.id });
+                userFarms = await db.select().from(farms).where(eq(farms.id, farmResult.id)).limit(1);
             }
             
             const [result] = await db.insert(crops).values({
@@ -185,9 +185,9 @@ export const cropRouter = createRouter({
                 description: input.description || null,
                 farmerId: ctx.user.id,
                 farmId: userFarms[0].id,
-            });
+            }).returning({ id: crops.id });
             
-            return { id: result.insertId, ...input };
+            return { id: result.id, ...input };
         }),
 
     update: authedQuery

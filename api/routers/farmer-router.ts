@@ -230,8 +230,8 @@ export const farmerRouter = createRouter({
                 location: input.location,
                 role: "farmer",
                 isVerified: true,
-            });
-            const userId = userResult.insertId;
+            }).returning({ id: users.id });
+            const userId = userResult.id;
             
             // 2. Create Farm
             await db.insert(farms).values({

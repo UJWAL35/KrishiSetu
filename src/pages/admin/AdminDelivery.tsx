@@ -87,9 +87,6 @@ function AssignModal({ orders, partners, onClose, onAssign }: {
                 {result ? (
                     <div className={`p-4 rounded-xl text-sm mb-4 ${result.startsWith("✅") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
                         {result}
-                        <p className="text-xs text-[#9E9E9E] mt-1">
-                            The system automatically plans chain delivery legs if the distance exceeds 200km.
-                        </p>
                     </div>
                 ) : (
                     <>
@@ -156,12 +153,6 @@ function AssignModal({ orders, partners, onClose, onAssign }: {
                             </div>
                         </div>
 
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5 flex items-start gap-2">
-                            <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-amber-700">
-                                If the delivery is <strong>over 200km</strong>, the system will automatically create a <strong>chain delivery</strong> through the nearest warehouses.
-                            </p>
-                        </div>
 
                         <button
                             onClick={handleAssign}
@@ -392,24 +383,7 @@ export default function AdminDelivery() {
 
                         {/* Auto-chaining removes the need for manual next-leg assignment */}
 
-                        {/* Chain delivery explanation */}
-                        <div className="bg-gradient-to-r from-[#01579B] to-[#0277BD] rounded-2xl p-6 text-white">
-                            <h3 className="font-bold text-lg mb-2">🔗 Smart Chain Delivery System</h3>
-                            <p className="text-white/80 text-sm leading-relaxed">
-                                KrishiSetu automatically plans delivery routes. For orders within <strong>200km</strong>, a single partner handles the full journey. 
-                                For longer distances, the system creates a <strong>relay chain</strong> through the nearest warehouses — 
-                                each leg is handled by a different local partner, maximizing efficiency.
-                            </p>
-                            <div className="flex items-center gap-2 mt-4 text-sm">
-                                <span className="bg-white/20 px-3 py-1 rounded-full">Farm</span>
-                                <ArrowRight className="w-4 h-4" />
-                                <span className="bg-white/20 px-3 py-1 rounded-full">Warehouse A</span>
-                                <ArrowRight className="w-4 h-4" />
-                                <span className="bg-white/20 px-3 py-1 rounded-full">Warehouse B</span>
-                                <ArrowRight className="w-4 h-4" />
-                                <span className="bg-white/20 px-3 py-1 rounded-full">Customer</span>
-                            </div>
-                        </div>
+
                     </motion.div>
                 )}
 

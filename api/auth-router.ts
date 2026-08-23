@@ -64,12 +64,12 @@ export const authRouter = createRouter({
                 isVerified: true,
                 isProfileComplete: input.role === "consumer",
                 lastSignInAt: new Date(),
-            });
+            }).returning({ id: users.id });
 
             const createdUsers = await db
                 .select()
                 .from(users)
-                .where(eq(users.id, result.insertId))
+                .where(eq(users.id, result.id))
                 .limit(1);
             const user = createdUsers[0];
 
@@ -125,6 +125,7 @@ export const authRouter = createRouter({
 
             // Update lastSignInAt
             await db.update(users).set({ lastSignInAt: new Date() }).where(eq(users.id, user.id));
+
 
             const token = await signSessionToken({
                 unionId: user.unionId,

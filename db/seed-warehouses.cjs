@@ -1,24 +1,26 @@
-const mysql = require('mysql2/promise');
+const postgres = require('postgres');
 const path = require('path');
 const fs = require('fs');
 
 // Load env manually
 const envPath = path.join(__dirname, '..', '.env');
-const envContent = fs.readFileSync(envPath, 'utf-8');
-for (const line of envContent.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx < 0) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
-    if (!process.env[key]) process.env[key] = val;
-}
+try {
+    const envContent = fs.readFileSync(envPath, 'utf-8');
+    for (const line of envContent.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx < 0) continue;
+        const key = trimmed.slice(0, eqIdx).trim();
+        const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+        if (!process.env[key]) process.env[key] = val;
+    }
+} catch (e) {}
 
 async function seed() {
     const url = process.env.DATABASE_URL;
     if (!url) { console.error('No DATABASE_URL'); process.exit(1); }
-    const conn = await mysql.createConnection(url);
+    const sql = postgres(url);
     
     const warehouseRows = [
         ['KrishiSetu Delhi Hub', 'Plot 45, Azadpur Mandi Complex, Delhi', 'Delhi', 'Delhi', 28.7041, 77.1025, true, 5000],
@@ -32,13 +34,14 @@ async function seed() {
     ];
 
     for (const row of warehouseRows) {
-        await conn.query(
-            'INSERT IGNORE INTO warehouses (name, address, city, state, lat, lng, isActive, capacity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            row
-        );
+        // Postgres does not have INSERT IGNORE. Check existence manually to be safe, or just insert if we know it's empty.
+        const [existing] = await sql`SELECT id FROM warehouses WHERE name = ${row[0]}`;
+        if (!existing) {
+            await sql`INSERT INTO warehouses (name, address, city, state, lat, lng, "isActive", capacity) VALUES (${row[0]}, ${row[1]}, ${row[2]}, ${row[3]}, ${row[4]}, ${row[5]}, ${row[6]}, ${row[7]})`;
+        }
     }
     console.log('Warehouses seeded successfully!');
-    await conn.end();
+    await sql.end();
 }
 
 seed().catch(e => { console.error(e); process.exit(1); });

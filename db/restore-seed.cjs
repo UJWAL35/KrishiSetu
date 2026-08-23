@@ -8,10 +8,8 @@
  *   Farmer 2: phone=7000000002  role=farmer
  *   Consumer: phone=8000000001  role=consumer
  */
-const mysql = require('mysql2/promise');
+const postgres = require('postgres');
 const crypto = require('crypto');
-
-const DB_URL = 'mysql://root:ujwalsql%402005@localhost:3306/smartfarm';
 
 function hashPassword(password) {
     const salt = 'smartfarm_salt_2024';
@@ -21,7 +19,8 @@ function hashPassword(password) {
 const ADMIN_PASS = hashPassword('Admin@123');
 
 async function seed() {
-    const conn = await mysql.createConnection(DB_URL);
+    const url = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/smartfarm';
+    const sql = postgres(url);
     console.log('Connected to DB');
 
     // ── 1. Clear orphaned farms ─────────────────────────────
@@ -141,25 +140,10 @@ async function seed() {
     ];
 
     for (const u of usersToInsert) {
-        await conn.query(
-            `INSERT IGNORE INTO users 
-             (id, unionId, name, phone, role, avatar, password, isVerified, isProfileComplete, location, lat, lng, createdAt, updatedAt, lastSignInAt)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
-            [
-                u.id,
-                u.unionId,
-                u.name,
-                u.phone,
-                u.role,
-                u.avatar || null,
-                u.password || null,
-                u.isVerified ? 1 : 0,
-                u.isProfileComplete ? 1 : 0,
-                u.location || null,
-                u.lat || null,
-                u.lng || null,
-            ]
-        );
+        await sql`INSERT INTO users 
+             (id, "unionId", name, phone, role, avatar, password, "isVerified", "isProfileComplete", location, lat, lng, "createdAt", "updatedAt", "lastSignInAt")
+             VALUES (${u.id}, ${u.unionId}, ${u.name}, ${u.phone}, ${u.role}, ${u.avatar || null}, ${u.password || null}, ${u.isVerified}, ${u.isProfileComplete}, ${u.location || null}, ${u.lat || null}, ${u.lng || null}, NOW(), NOW(), NOW())
+             ON CONFLICT ("unionId") DO NOTHING`;
         console.log('Inserted user:', u.name, '(' + u.role + ')');
     }
 
@@ -190,25 +174,22 @@ async function seed() {
     ];
 
     for (const c of crops) {
-        await conn.query(
-            `INSERT INTO crops (farmId, farmerId, name, category, price, unit, stock, description, image, isAvailable, isOrganic, createdAt, updatedAt)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-            [c.farmId, c.farmerId, c.name, c.category, c.price, c.unit, c.stock, c.description, c.image, c.isAvailable ? 1 : 0, c.isOrganic ? 1 : 0]
-        );
+        await sql`INSERT INTO crops ("farmId", "farmerId", name, category, price, unit, stock, description, image, "isAvailable", "isOrganic", "createdAt", "updatedAt")
+             VALUES (${c.farmId}, ${c.farmerId}, ${c.name}, ${c.category}, ${c.price}, ${c.unit}, ${c.stock}, ${c.description}, ${c.image}, ${c.isAvailable}, ${c.isOrganic}, NOW(), NOW())`;
         console.log('Inserted crop:', c.name, '(farmer:', c.farmerId + ')');
     }
 
 
     // ── 4. Verify ───────────────────────────────────────────
-    const [allUsers] = await conn.query('SELECT id, name, phone, role FROM users ORDER BY id');
+    const allUsers = await sql`SELECT id, name, phone, role FROM users ORDER BY id`;
     console.log('\n✅ Final users:');
     allUsers.forEach(u => console.log('  ', u.id, u.role, u.phone, u.name));
 
-    const [allCrops] = await conn.query('SELECT id, name, farmerId, isAvailable FROM crops ORDER BY farmerId');
+    const allCrops = await sql`SELECT id, name, "farmerId", "isAvailable" FROM crops ORDER BY "farmerId"`;
     console.log('\n✅ Final crops:', allCrops.length);
     allCrops.forEach(c => console.log('  ', c.id, c.name, '(farmer:', c.farmerId + ')'));
 
-    await conn.end();
+    await sql.end();
     console.log('\n🎉 Seed complete!');
 }
 

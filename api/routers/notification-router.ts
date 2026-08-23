@@ -86,9 +86,9 @@ export const notificationRouter = createRouter({
                 message: input.message,
                 type: input.type,
                 isRead: false,
-            });
+            }).returning({ id: notifications.id });
             
-            const newNotif = await db.select().from(notifications).where(eq(notifications.id, result.insertId)).limit(1);
+            const newNotif = await db.select().from(notifications).where(eq(notifications.id, result.id)).limit(1);
             return {
                 ...newNotif[0],
                 message: newNotif[0].message || "",

@@ -12,7 +12,7 @@ if (accountSid && authToken) {
 
 export async function sendWhatsAppWelcomeMessage(phone: string, name: string, role: string) {
     const formattedPhone = `whatsapp:+91${phone}`;
-    const messageBody = `Hello ${name}!\n\nWelcome to KrishiSetu. We are thrilled to have you join our platform as a ${role}.\n\nYour account is now registered and active. Thank you for connecting with us!`;
+    const messageBody = `Hello ${name}!\n\nWelcome to Krishi Setu and new extra messages. We are thrilled to have you join our platform as a ${role}.\n\nYour account is now registered and active. Thank you for connecting with us!`;
 
     if (!client || !whatsappNumber) {
         console.log("==========================================");
@@ -24,9 +24,10 @@ export async function sendWhatsAppWelcomeMessage(phone: string, name: string, ro
     }
 
     try {
+        const fromNumber = whatsappNumber.startsWith('whatsapp:') ? whatsappNumber : `whatsapp:${whatsappNumber}`;
         const message = await client.messages.create({
             body: messageBody,
-            from: whatsappNumber,
+            from: fromNumber,
             to: formattedPhone,
         });
         console.log(`WhatsApp message sent successfully to ${phone}. SID: ${message.sid}`);

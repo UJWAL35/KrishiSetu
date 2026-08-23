@@ -1,13 +1,12 @@
-const mysql = require('mysql2/promise');
-
-const DB_URL = 'mysql://root:ujwalsql%402005@localhost:3306/smartfarm';
+const postgres = require('postgres');
 
 async function seedSchemes() {
-    const conn = await mysql.createConnection(DB_URL);
+    const url = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/smartfarm';
+    const sql = postgres(url);
     console.log('Connected to DB');
 
     // First clear old/expired schemes
-    await conn.query('DELETE FROM schemes');
+    await sql`DELETE FROM schemes`;
 
     const newSchemes = [
         {
@@ -69,15 +68,12 @@ async function seedSchemes() {
     ];
 
     for (const s of newSchemes) {
-        await conn.query(
-            `INSERT INTO schemes (title, description, category, benefit, eligibility, deadline, documentRequired, applicationLink, image, isActive, isNew, color, createdAt, updatedAt)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-            [s.title, s.description, s.category, s.benefit, s.eligibility, s.deadline, s.documentRequired, s.applicationLink, s.image, s.isActive ? 1 : 0, s.isNew ? 1 : 0, s.color]
-        );
+        await sql`INSERT INTO schemes (title, description, category, benefit, eligibility, deadline, "documentRequired", "applicationLink", image, "isActive", "isNew", color, "createdAt", "updatedAt")
+             VALUES (${s.title}, ${s.description}, ${s.category}, ${s.benefit}, ${s.eligibility}, ${s.deadline}, ${s.documentRequired}, ${s.applicationLink}, ${s.image}, ${s.isActive}, ${s.isNew}, ${s.color}, NOW(), NOW())`;
         console.log('Inserted scheme:', s.title);
     }
 
-    await conn.end();
+    await sql.end();
     console.log('Schemes updated successfully!');
 }
 

@@ -3,7 +3,7 @@ import { createRouter, publicQuery, authedQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import { orders, users, crops, notifications } from "@db/schema";
 import { eq, desc, and } from "drizzle-orm";
-import { alias } from "drizzle-orm/mysql-core";
+import { alias } from "drizzle-orm/pg-core";
 import { planDeliveryLegs } from "./delivery-router";
 import { deliveries, warehouses } from "@db/schema";
 
@@ -104,8 +104,8 @@ export const orderRouter = createRouter({
                 deliveryType: input.deliveryType,
                 deliveryAddress: input.address,
                 status: "pending",
-            });
-            const newOrderId = orderInsert.insertId;
+            }).returning({ id: orders.id });
+            const newOrderId = orderInsert.id;
 
             // Generate delivery legs if it's not pickup
             if (input.deliveryType !== "pickup") {
@@ -280,8 +280,8 @@ export const orderRouter = createRouter({
                 status: "pending",
                 otp,
                 deliveryAddress: input.address,
-            });
-            const newOrderId = result.insertId;
+            }).returning({ id: orders.id });
+            const newOrderId = result.id;
 
             // Generate delivery legs if it's not pickup
             if (input.deliveryType !== "pickup") {
@@ -345,7 +345,7 @@ export const orderRouter = createRouter({
                 isRead: false,
             });
 
-            return { id: result.insertId, orderNumber, otp, success: true };
+            return { id: result.id, orderNumber, otp, success: true };
         }),
 
     updateStatus: publicQuery

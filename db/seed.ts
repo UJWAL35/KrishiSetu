@@ -31,8 +31,8 @@ async function seed() {
         role: "admin",
         isVerified: true,
         password: hashPassword("admin123"),
-    });
-    const adminId = adminRes.insertId;
+    }).returning({ id: users.id });
+    const adminId = adminRes.id;
 
     const [farmerRes] = await db.insert(users).values({
         unionId: "farmer_123",
@@ -44,8 +44,8 @@ async function seed() {
         isProfileComplete: true,
         rating: 4.8,
         reviewCount: 120,
-    });
-    const farmerId = farmerRes.insertId;
+    }).returning({ id: users.id });
+    const farmerId = farmerRes.id;
 
     const [consumerRes] = await db.insert(users).values({
         unionId: "consumer_123",
@@ -54,8 +54,8 @@ async function seed() {
         role: "consumer",
         location: "Mumbai, Maharashtra",
         isVerified: true,
-    });
-    const consumerId = consumerRes.insertId;
+    }).returning({ id: users.id });
+    const consumerId = consumerRes.id;
 
     // 2. Create Farm
     const [farmRes] = await db.insert(farms).values({
@@ -65,8 +65,8 @@ async function seed() {
         size: "15 Acres",
         soilType: "Black Cotton",
         isOrganic: true,
-    });
-    const farmId = farmRes.insertId;
+    }).returning({ id: farms.id });
+    const farmId = farmRes.id;
 
     // 3. Create Crops
     await db.insert(crops).values([

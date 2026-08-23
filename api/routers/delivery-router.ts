@@ -12,7 +12,7 @@ import {
     warehouses,
 } from "@db/schema";
 import { eq, desc, and, count, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/mysql-core";
+import { alias } from "drizzle-orm/pg-core";
 
 // ── Haversine distance in km ─────────────────────────────
 export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -47,96 +47,19 @@ export function planDeliveryLegs(
     fromWarehouseId: number | null;
     toWarehouseId: number | null;
 }> {
-    const totalDist = haversineKm(farmLat, farmLng, customerLat, customerLng);
-
-    if (totalDist <= MAX_DIRECT_KM || allWarehouses.length === 0) {
-        return [
-            {
-                legIndex: 1,
-                pickupLat: farmLat,
-                pickupLng: farmLng,
-                pickupAddress: farmAddress,
-                deliveryLat: customerLat,
-                deliveryLng: customerLng,
-                deliveryAddress: customerAddress,
-                fromWarehouseId: null,
-                toWarehouseId: null,
-            },
-        ];
-    }
-
-    const legs: ReturnType<typeof planDeliveryLegs> = [];
-
-    const nearFarm = allWarehouses.reduce((best, wh) => {
-        const d = haversineKm(farmLat, farmLng, wh.lat, wh.lng);
-        return d < haversineKm(farmLat, farmLng, best.lat, best.lng) ? wh : best;
-    });
-
-    const nearCustomer = allWarehouses.reduce((best, wh) => {
-        const d = haversineKm(customerLat, customerLng, wh.lat, wh.lng);
-        return d < haversineKm(customerLat, customerLng, best.lat, best.lng) ? wh : best;
-    });
-
-    if (nearFarm.id === nearCustomer.id) {
-        legs.push({
+    return [
+        {
             legIndex: 1,
             pickupLat: farmLat,
             pickupLng: farmLng,
             pickupAddress: farmAddress,
-            deliveryLat: nearFarm.lat,
-            deliveryLng: nearFarm.lng,
-            deliveryAddress: `KrishiSetu Warehouse – ${nearFarm.name}, ${nearFarm.city}`,
-            fromWarehouseId: null,
-            toWarehouseId: nearFarm.id,
-        });
-        legs.push({
-            legIndex: 2,
-            pickupLat: nearFarm.lat,
-            pickupLng: nearFarm.lng,
-            pickupAddress: `KrishiSetu Warehouse – ${nearFarm.name}, ${nearFarm.city}`,
             deliveryLat: customerLat,
             deliveryLng: customerLng,
             deliveryAddress: customerAddress,
-            fromWarehouseId: nearFarm.id,
-            toWarehouseId: null,
-        });
-    } else {
-        legs.push({
-            legIndex: 1,
-            pickupLat: farmLat,
-            pickupLng: farmLng,
-            pickupAddress: farmAddress,
-            deliveryLat: nearFarm.lat,
-            deliveryLng: nearFarm.lng,
-            deliveryAddress: `KrishiSetu Warehouse – ${nearFarm.name}, ${nearFarm.city}`,
             fromWarehouseId: null,
-            toWarehouseId: nearFarm.id,
-        });
-        legs.push({
-            legIndex: 2,
-            pickupLat: nearFarm.lat,
-            pickupLng: nearFarm.lng,
-            pickupAddress: `KrishiSetu Warehouse – ${nearFarm.name}, ${nearFarm.city}`,
-            deliveryLat: nearCustomer.lat,
-            deliveryLng: nearCustomer.lng,
-            deliveryAddress: `KrishiSetu Warehouse – ${nearCustomer.name}, ${nearCustomer.city}`,
-            fromWarehouseId: nearFarm.id,
-            toWarehouseId: nearCustomer.id,
-        });
-        legs.push({
-            legIndex: 3,
-            pickupLat: nearCustomer.lat,
-            pickupLng: nearCustomer.lng,
-            pickupAddress: `KrishiSetu Warehouse – ${nearCustomer.name}, ${nearCustomer.city}`,
-            deliveryLat: customerLat,
-            deliveryLng: customerLng,
-            deliveryAddress: customerAddress,
-            fromWarehouseId: nearCustomer.id,
             toWarehouseId: null,
-        });
-    }
-
-    return legs;
+        },
+    ];
 }
 
 function generateOTP(): string {
@@ -179,11 +102,11 @@ export const deliveryRouter = createRouter({
                 homeWarehouseId: input.homeWarehouseId,
                 isAvailable: false,
                 isVerified: true,
-            });
+            }).returning({ id: deliveryPartners.id });
             const partner = await db
                 .select()
                 .from(deliveryPartners)
-                .where(eq(deliveryPartners.id, result.insertId))
+                .where(eq(deliveryPartners.id, result.id))
                 .limit(1);
             return { success: true, partner: partner[0] };
         }),
@@ -298,6 +221,7 @@ export const deliveryRouter = createRouter({
                     farmerLocation: farmerAlias.location,
                     cropName: crops.name,
                     customerName: customerAlias.name,
+                    otp: orders.otp,
                 })
                 .from(orders)
                 .leftJoin(farmerAlias, eq(orders.farmerId, farmerAlias.id))
@@ -328,7 +252,7 @@ export const deliveryRouter = createRouter({
 
             const legs = planDeliveryLegs(farmLat, farmLng, farmAddr, custLat, custLng, custAddr, allWhs);
             const totalLegs = legs.length;
-            const otp = generateOTP();
+            const otp = orderRow.otp || generateOTP();
 
             for (const leg of legs) {
                 await db.insert(deliveries).values({
@@ -572,8 +496,8 @@ export const deliveryRouter = createRouter({
             await db
                 .update(deliveryPartners)
                 .set({
-                    totalDeliveries: sql`COALESCE(totalDeliveries, 0) + 1`,
-                    totalEarnings: sql`COALESCE(totalEarnings, 0) + ${leg.partnerEarning}`,
+                    totalDeliveries: sql`COALESCE("totalDeliveries", 0) + 1`,
+                    totalEarnings: sql`COALESCE("totalEarnings", 0) + ${leg.partnerEarning}`,
                 })
                 .where(eq(deliveryPartners.userId, ctx.user.id));
 
