@@ -1,12 +1,19 @@
 {
-  "rewrites": [
+  "buildCommand": "vite build && esbuild api/boot.ts --platform=node --bundle --format=esm --outdir=dist --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\"",
+  "outputDirectory": "dist/public",
+  "functions": {
+    "api/boot.ts": {
+      "runtime": "@vercel/node@5"
+    }
+  },
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/boot.ts"
+      "src": "/api/(.*)",
+      "dest": "api/boot.ts"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
