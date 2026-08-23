@@ -1,15 +1,32 @@
 {
-  "buildCommand": "vite build && esbuild api/boot.ts --platform=node --bundle --format=esm --outdir=dist --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\"",
-  "outputDirectory": "dist/public",
-  "functions": {
-    "api/boot.ts": {
-      "runtime": "@vercel/node@5"
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/boot.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "api/**",
+          "db/**",
+          "contracts/**"
+        ]
+      }
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist/public"
+      }
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "api/boot.ts"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
