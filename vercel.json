@@ -1,29 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/boot.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": [
-          "api/**",
-          "db/**",
-          "contracts/**"
-        ]
-      }
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist/public"
-      }
-    }
-  ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "api/boot.ts"
+      "dest": "/api/index.ts"
     },
     {
       "handle": "filesystem"
