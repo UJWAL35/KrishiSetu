@@ -4,7 +4,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import fs from "fs";
 import path from "path";
 
-type App = Hono<{ Bindings: HttpBindings }>;
+type App = Hono;
 
 export function serveStaticFiles(app: App) {
     const distPath = path.resolve(import.meta.dirname, "../dist/public");

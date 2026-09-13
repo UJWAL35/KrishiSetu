@@ -10,7 +10,7 @@ export async function findUserByUnionId(unionId: string) {
         .from(schema.users)
         .where(eq(schema.users.unionId, unionId))
         .limit(1);
-    return rows.at(0);
+    return rows[0];
 }
 
 export async function upsertUser(data: InsertUser) {
