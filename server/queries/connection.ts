@@ -11,7 +11,14 @@ let queryClient: ReturnType<typeof postgres>;
 
 export function getDb() {
     if (!instance) {
-        queryClient = postgres(env.databaseUrl);
+        // Supabase requires SSL. On Vercel serverless, we use max:1 connection
+        // to avoid exhausting the connection pool across function invocations.
+        queryClient = postgres(env.databaseUrl, {
+            ssl: "require",
+            max: 1,
+            idle_timeout: 20,
+            connect_timeout: 10,
+        });
         instance = drizzle(queryClient, {
             schema: fullSchema,
         });

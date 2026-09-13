@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import type { HttpBindings } from "@hono/node-server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
 import { createContext } from "./context";
@@ -8,7 +7,8 @@ import { env } from "./lib/env";
 import { createOAuthCallbackHandler } from "./kimi/auth";
 import { Paths } from "@contracts/constants";
 
-const app = new Hono<{ Bindings: HttpBindings }>();
+// Use a plain Hono app without Node-specific bindings so it works on Vercel serverless
+const app = new Hono();
 
 app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 app.get(Paths.oauthCallback, createOAuthCallbackHandler());
@@ -24,13 +24,16 @@ app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
 export default app;
 
+// Only start a local Node server when running outside Vercel
 if (env.isProduction && !process.env.VERCEL) {
-    const { serve } = await import("@hono/node-server");
-    const { serveStaticFiles } = await import("./lib/vite");
-    serveStaticFiles(app);
-
-    const port = parseInt(process.env.PORT || "3000");
-    serve({ fetch: app.fetch, port }, () => {
-        console.log(`Server running on http://localhost:${port}/`);
+    // Dynamic import so Vercel's bundler doesn't pull in @hono/node-server
+    import("@hono/node-server").then(({ serve }) => {
+        import("./lib/vite").then(({ serveStaticFiles }) => {
+            serveStaticFiles(app);
+            const port = parseInt(process.env.PORT || "3000");
+            serve({ fetch: app.fetch, port }, () => {
+                console.log(`Server running on http://localhost:${port}/`);
+            });
+        });
     });
 }

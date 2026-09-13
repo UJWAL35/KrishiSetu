@@ -37,14 +37,15 @@ async function exchangeAuthCode(
     return resp.json() as Promise<TokenResponse>;
 }
 
-const jwks = jose.createRemoteJWKSet(
-    new URL(`${env.kimiAuthUrl}/api/.well-known/jwks.json`),
-);
 
 async function verifyAccessToken(
     accessToken: string,
 ): Promise<{ userId: string; clientId: string }> {
-    const { payload } = await jose.jwtVerify(accessToken, jwks);
+    // Lazy-init JWKS so it doesn't run at module-load time during Vercel build
+    const jwksClient = jose.createRemoteJWKSet(
+        new URL(`${env.kimiAuthUrl}/api/.well-known/jwks.json`),
+    );
+    const { payload } = await jose.jwtVerify(accessToken, jwksClient);
     const userId = payload.user_id as string;
     const clientId = payload.client_id as string;
     if (!userId) {
